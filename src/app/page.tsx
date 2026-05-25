@@ -1,65 +1,87 @@
-import Image from "next/image";
+import { AppShell } from "@/components/app-shell";
+import { getAppData } from "@/lib/app-data";
+import { overallScore, trackerTotals } from "@/lib/metrics";
 
-export default function Home() {
+export default async function Home() {
+  const { trackers, logs, smartSets, isAuthenticated } = await getAppData();
+  const totals = trackerTotals(trackers, logs, 7);
+  const score = overallScore(totals);
+  const topTracker = totals.filter((tracker) => tracker.mode !== "measurement").sort((a, b) => b.score - a.score)[0];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <AppShell>
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Launch app</p>
+          <h1>Your progress cockpit</h1>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
+        <div className="topbar-actions">
+          <a className="ghost-button" href="/journal">
+            Check in
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+          <a className="primary-button" href="/log">
+            Log today
           </a>
         </div>
-      </main>
-    </div>
+      </header>
+
+      <section className="hero-grid">
+        <article className="score-card">
+          <div>
+            <span className="eyebrow">Overall progress</span>
+            <strong>{score}%</strong>
+            <p>
+              {topTracker?.name ?? "Your strongest lane"} is currently leading the week. This page is still seeded,
+              but the data model is ready for Supabase.
+            </p>
+            {!isAuthenticated ? <a className="ghost-button inline-action" href="/auth">Sign in to sync</a> : null}
+          </div>
+          <div className="ring" style={{ "--score": `${score * 3.6}deg` } as React.CSSProperties}>
+            <span>{score}%</span>
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Smart sets</span>
+              <h2>Quick routines</h2>
+            </div>
+          </div>
+          <div className="routine-list">
+            {smartSets.map((set) => (
+              <a href="/log" className="routine-card" key={set.id}>
+                <strong>{set.name}</strong>
+                <p>{set.description}</p>
+                <span>{set.items.length} default logs</span>
+              </a>
+            ))}
+          </div>
+        </article>
+      </section>
+
+      <section className="tracker-grid">
+        {totals.map((tracker) => (
+          <article className="tracker-card" key={tracker.id}>
+            <header>
+              <div>
+                <h3>{tracker.name}</h3>
+                <p>
+                  {Math.round(tracker.rawTotal)} / {Math.round(tracker.target)} {tracker.unit}
+                </p>
+              </div>
+              <span>{tracker.category}</span>
+            </header>
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${Math.min(100, tracker.score)}%` }} />
+            </div>
+            <div className="metric-line">
+              <span>Weekly target</span>
+              <span>{Math.round(tracker.score)}%</span>
+            </div>
+          </article>
+        ))}
+      </section>
+    </AppShell>
   );
 }
