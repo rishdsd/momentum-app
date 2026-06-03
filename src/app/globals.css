@@ -556,3 +556,30 @@ code {
     min-height: 54px;
   }
 }
+
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  background: #edf5ef;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  min-height: 34px;
+  padding: 0 10px;
+  transition: all 0.15s;
+}
+
+.auth-tab.active {
+  background: #fff;
+  color: var(--green);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
