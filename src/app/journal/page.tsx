@@ -13,30 +13,38 @@ export default async function JournalPage() {
         </div>
       </header>
 
-      <section className="journal-grid">
-        {Object.entries(journalPrompts).map(([period, prompts]) => {
-          const entry = journalEntries.find((item) => item.period === period);
-          return (
-            <article className="journal-card" key={period}>
-              <header>
-                <span className="eyebrow">{period}</span>
-                <strong>{entry ? "Active" : "Not set"}</strong>
-              </header>
-              <div className="form-stack">
-                {prompts.map((prompt) => (
-                  <label key={prompt}>
-                    {prompt}
-                    <textarea defaultValue={entry?.answers[prompt] ?? ""} rows={3} />
-                  </label>
-                ))}
-              </div>
-              <button className="ghost-button" type="button">
-                Save {period}
-              </button>
-            </article>
-          );
-        })}
-      </section>
+      {Object.values(journalPrompts).some((prompts) => prompts.length) ? (
+        <section className="journal-grid">
+          {Object.entries(journalPrompts).map(([period, prompts]) => {
+            const entry = journalEntries.find((item) => item.period === period);
+            return (
+              <article className="journal-card" key={period}>
+                <header>
+                  <span className="eyebrow">{period}</span>
+                  <strong>{entry ? "Active" : "Not set"}</strong>
+                </header>
+                <div className="form-stack">
+                  {prompts.map((prompt) => (
+                    <label key={prompt}>
+                      {prompt}
+                      <textarea defaultValue={entry?.answers[prompt] ?? ""} rows={3} />
+                    </label>
+                  ))}
+                </div>
+                <button className="ghost-button" type="button">
+                  Save {period}
+                </button>
+              </article>
+            );
+          })}
+        </section>
+      ) : (
+        <section className="empty-state">
+          <span className="eyebrow">Fresh journal</span>
+          <h2>No prompts or entries yet</h2>
+          <p>Your journal is empty. Prompt creation will be the next journal setup step.</p>
+        </section>
+      )}
     </AppShell>
   );
 }

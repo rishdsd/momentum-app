@@ -22,22 +22,32 @@ export default async function ProgressPage() {
             <h2>How each lane is moving</h2>
           </div>
         </div>
-        <div className="tracker-grid">
-          {totals.map((tracker) => (
-            <article className="tracker-card" key={tracker.id}>
-              <header>
-                <div>
-                  <h3>{tracker.name}</h3>
-                  <p>{Math.round(tracker.score)}% of monthly target</p>
+        {totals.length ? (
+          <div className="tracker-grid">
+            {totals.map((tracker) => (
+              <article className="tracker-card" key={tracker.id}>
+                <header>
+                  <div>
+                    <h3>{tracker.name}</h3>
+                    <p>{Math.round(tracker.score)}% of monthly target</p>
+                  </div>
+                  <span>{tracker.category}</span>
+                </header>
+                <div className="progress-track">
+                  <div className="progress-fill" style={{ width: `${Math.min(100, tracker.score)}%` }} />
                 </div>
-                <span>{tracker.category}</span>
-              </header>
-              <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${Math.min(100, tracker.score)}%` }} />
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state compact">
+            <strong>No progress data yet</strong>
+            <p>Create a tracker and save your first daily log to begin this view.</p>
+            <a className="primary-button" href="/trackers">
+              Create tracker
+            </a>
+          </div>
+        )}
       </section>
     </AppShell>
   );

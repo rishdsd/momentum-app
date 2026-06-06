@@ -1,11 +1,4 @@
 import { createClient } from "@/lib/supabase-server";
-import {
-  createSeedLogs,
-  journalEntries as seedJournalEntries,
-  journalPrompts as seedJournalPrompts,
-  smartSets as seedSmartSets,
-  trackers as seedTrackers,
-} from "@/lib/seed-data";
 import type { JournalEntry, JournalPeriod, LogEntry, SmartSet, Tracker } from "@/types/domain";
 
 type AppData = {
@@ -18,13 +11,12 @@ type AppData = {
 };
 
 export async function getAppData(): Promise<AppData> {
-  const fallback = getSeedData(false);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return fallback;
+  if (!user) return getEmptyData(false);
 
   const [trackersResult, logsResult, smartSetsResult, itemsResult, promptsResult, entriesResult] = await Promise.all([
     supabase.from("trackers").select("*").order("created_at", { ascending: true }),
@@ -43,7 +35,7 @@ export async function getAppData(): Promise<AppData> {
     promptsResult.error ||
     entriesResult.error
   ) {
-    return getSeedData(true);
+    return getEmptyData(true);
   }
 
   const trackers = (trackersResult.data ?? []).map((row) => ({
@@ -92,21 +84,21 @@ export async function getAppData(): Promise<AppData> {
 
   return {
     isAuthenticated: true,
-    trackers: trackers.length ? trackers : seedTrackers,
-    logs: logs.length ? logs : createSeedLogs(),
-    smartSets: smartSets.length ? smartSets : seedSmartSets,
-    journalPrompts: Object.values(journalPrompts).some((prompts) => prompts.length) ? journalPrompts : seedJournalPrompts,
-    journalEntries: journalEntries.length ? journalEntries : seedJournalEntries,
+    trackers,
+    logs,
+    smartSets,
+    journalPrompts,
+    journalEntries,
   };
 }
 
-function getSeedData(isAuthenticated: boolean): AppData {
+function getEmptyData(isAuthenticated: boolean): AppData {
   return {
     isAuthenticated,
-    trackers: seedTrackers,
-    logs: createSeedLogs(),
-    smartSets: seedSmartSets,
-    journalPrompts: seedJournalPrompts,
-    journalEntries: seedJournalEntries,
+    trackers: [],
+    logs: [],
+    smartSets: [],
+    journalPrompts: { daily: [], weekly: [], monthly: [], yearly: [] },
+    journalEntries: [],
   };
 }

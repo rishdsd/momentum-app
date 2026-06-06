@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/app-shell";
-import { seedAccount, signOut } from "@/app/actions";
+import { signOut } from "@/app/actions";
 
 export default function SettingsPage() {
   return (
@@ -14,19 +14,13 @@ export default function SettingsPage() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">Supabase</span>
-            <h2>Account setup</h2>
+            <h2>Account</h2>
           </div>
         </div>
         <p className="muted-copy">
-          After the SQL migration is created in Supabase, sign in and seed your account. This adds your starter trackers,
-          smart sets, and journal prompts under your user id.
+          Your account starts empty. Trackers, logs, smart sets, and journal entries are stored only when you create them.
         </p>
         <div className="settings-actions">
-          <form action={seedAccount}>
-            <button className="primary-button" type="submit">
-              Seed my account
-            </button>
-          </form>
           <form action={signOut}>
             <button className="ghost-button" type="submit">
               Sign out

@@ -3,10 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase-server";
-import { journalPrompts, smartSets, trackers } from "@/lib/seed-data";
-import type { JournalPeriod } from "@/types/domain";
 
-export async function seedAccount() {
+export async function createTracker(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,80 +12,77 @@ export async function seedAccount() {
 
   if (!user) redirect("/auth");
 
-  const { count } = await supabase
-    .from("trackers")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+  const name = String(formData.get("name") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim();
+  const unit = String(formData.get("unit") ?? "").trim();
+  const weeklyTarget = Number(formData.get("weeklyTarget"));
+  const overallWeight = Number(formData.get("overallWeight"));
+  const mode = String(formData.get("mode") ?? "count");
 
-  if (count && count > 0) {
-    revalidatePath("/");
-    return;
+  if (!name || !category || !unit || weeklyTarget <= 0 || overallWeight < 1 || overallWeight > 10) {
+    throw new Error("Invalid tracker details.");
   }
 
-  const { data: insertedTrackers, error: trackerError } = await supabase
-    .from("trackers")
-    .insert(
-      trackers.map((tracker) => ({
-        user_id: user.id,
-        name: tracker.name,
-        category: tracker.category,
-        unit: tracker.unit,
-        weekly_target: tracker.weeklyTarget,
-        overall_weight: tracker.weight,
-        mode: tracker.mode ?? "count",
-      })),
-    )
-    .select("id, name");
+  const { error } = await supabase.from("trackers").insert({
+    user_id: user.id,
+    name,
+    category,
+    unit,
+    weekly_target: weeklyTarget,
+    overall_weight: overallWeight,
+    mode,
+  });
 
-  if (trackerError) throw new Error(trackerError.message);
-
-  const trackerIdByName = new Map((insertedTrackers ?? []).map((tracker) => [tracker.name, tracker.id]));
-  const trackerIdBySeedId = new Map(trackers.map((tracker) => [tracker.id, trackerIdByName.get(tracker.name)]));
-
-  const { data: insertedSmartSets, error: smartSetError } = await supabase
-    .from("smart_sets")
-    .insert(
-      smartSets.map((set) => ({
-        user_id: user.id,
-        name: set.name,
-        description: set.description,
-      })),
-    )
-    .select("id, name");
-
-  if (smartSetError) throw new Error(smartSetError.message);
-
-  const smartSetIdByName = new Map((insertedSmartSets ?? []).map((set) => [set.name, set.id]));
-  const smartSetItems = smartSets.flatMap((set) =>
-    set.items
-      .map((item) => ({
-        smart_set_id: smartSetIdByName.get(set.name),
-        tracker_id: trackerIdBySeedId.get(item.trackerId),
-        amount: item.amount,
-      }))
-      .filter((item) => item.smart_set_id && item.tracker_id),
-  );
-
-  if (smartSetItems.length) {
-    const { error } = await supabase.from("smart_set_items").insert(smartSetItems);
-    if (error) throw new Error(error.message);
-  }
-
-  const promptRows = (Object.entries(journalPrompts) as Array<[JournalPeriod, string[]]>).flatMap(([period, prompts]) =>
-    prompts.map((prompt, index) => ({
-      user_id: user.id,
-      period,
-      prompt,
-      sort_order: index,
-    })),
-  );
-  const { error: promptError } = await supabase.from("journal_prompts").insert(promptRows);
-  if (promptError) throw new Error(promptError.message);
+  if (error) throw new Error(error.message);
 
   revalidatePath("/");
   revalidatePath("/log");
-  revalidatePath("/journal");
   revalidatePath("/trackers");
+  revalidatePath("/progress");
+}
+
+export async function createLog(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/auth");
+
+  const trackerId = String(formData.get("trackerId") ?? "");
+  const amount = Number(formData.get("amount"));
+  const mood = Number(formData.get("mood"));
+  const energy = Number(formData.get("energy"));
+  const note = String(formData.get("note") ?? "").trim();
+  const loggedOn = String(formData.get("loggedOn") ?? new Date().toISOString().slice(0, 10));
+
+  if (!trackerId || amount <= 0 || mood < 1 || mood > 5 || energy < 1 || energy > 5) {
+    throw new Error("Invalid log details.");
+  }
+
+  const { data: tracker, error: trackerError } = await supabase
+    .from("trackers")
+    .select("id")
+    .eq("id", trackerId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (trackerError || !tracker) throw new Error("Tracker not found.");
+
+  const { error } = await supabase.from("logs").insert({
+    user_id: user.id,
+    tracker_id: trackerId,
+    amount,
+    mood,
+    energy,
+    note: note || null,
+    logged_on: loggedOn,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+  revalidatePath("/log");
   revalidatePath("/progress");
 }
 
