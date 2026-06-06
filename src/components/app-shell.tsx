@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BarChart3, BookOpen, Home, ListChecks, Settings, Target } from "lucide-react";
 import { AuthStatus } from "@/components/auth-status";
+import { MobileDrawer } from "@/components/mobile-drawer";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -14,6 +15,7 @@ const navItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
+      <MobileDrawer />
       <aside className="sidebar">
         <Link className="brand" href="/">
           <span className="brand-mark">M</span>
@@ -38,14 +40,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AuthStatus />
       </aside>
       <main className="main-content">{children}</main>
-      <nav className="bottom-tabs" aria-label="Mobile primary">
-        {navItems.slice(0, 4).map((item) => (
-          <Link className={item.href === "/log" ? "log-tab" : ""} href={item.href} key={item.href}>
-            <item.icon size={18} />
-            <span>{item.label}</span>
-          </Link>
-        ))}
-      </nav>
     </div>
   );
 }
